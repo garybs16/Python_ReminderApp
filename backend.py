@@ -1,25 +1,25 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog
-from tkinter.ttk import Treeview, Notebook, Style
+from tkinter.ttk import Treeview, Notebook, Style, Combobox
 import datetime
 import json
 import os
-from tkcalendar import DateEntry 
+from tkcalendar import DateEntry
 import logging
-
+from plyer import notification
+import pandas as pd 
+                 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 class ReminderApp:
 
     def __init__(self, root):
         self.tasks = []
-        # Define a custom file path for saving tasks
+        self.dark_mode = False
         self.file_directory = "C:/Users/Garys/.vscode/Pyhton/Reminder_PROJECT"
         self.file_path = os.path.join(self.file_directory, "tasks.json")
 
-        # Ensure the directory exists
         if not os.path.exists(self.file_directory):
             os.makedirs(self.file_directory)
 
@@ -33,7 +33,6 @@ class ReminderApp:
         self.create_welcome_page()
 
     def load_tasks(self):
-        """Load tasks from the JSON file."""
         if os.path.exists(self.file_path):
             try:
                 with open(self.file_path, "r") as file:
@@ -46,7 +45,6 @@ class ReminderApp:
                 self.tasks = []
 
     def save_tasks(self):
-        """Save tasks to the JSON file."""
         try:
             with open(self.file_path, "w") as file:
                 tasks_to_save = [
@@ -64,7 +62,6 @@ class ReminderApp:
             messagebox.showerror("Error", f"Failed to save tasks: {e}")
 
     def create_welcome_page(self):
-        """Create the welcome page."""
         self.welcome_frame = tk.Frame(self.root, bg="#f0f8ff")
         self.welcome_frame.pack(fill="both", expand=True)
 
@@ -93,35 +90,33 @@ class ReminderApp:
         start_button.pack(pady=20)
 
     def start_application(self):
-        """Start the main application."""
         self.welcome_frame.destroy()
         self.create_widgets()
 
     def create_widgets(self):
-        """Create the main UI widgets."""
         self.notebook = Notebook(self.root)
         self.notebook.pack(pady=10, expand=True, fill="both")
 
         self.task_tab = tk.Frame(self.notebook, bg="#f0f8ff")
         self.schedule_tab = tk.Frame(self.notebook, bg="#f5f5dc")
-        self.report_tab = tk.Frame(self.notebook, bg="#f0fff0")  # New Report Tab
+        self.report_tab = tk.Frame(self.notebook, bg="#f0fff0")
 
         self.notebook.add(self.task_tab, text="Tasks")
         self.notebook.add(self.schedule_tab, text="Schedule")
-        self.notebook.add(self.report_tab, text="Reports")  # Add Report Tab
+        self.notebook.add(self.report_tab, text="Reports")
 
         self.create_task_tab()
         self.create_schedule_tab()
         self.create_report_tab()
 
     def create_task_tab(self):
-        """Create the Tasks tab."""
         frame = tk.Frame(self.task_tab, bg="#f0f8ff")
         frame.pack(pady=10, fill="x")
+
         tk.Label(frame, text="Task Name:", bg="#f0f8ff", font=("Arial", 12)).grid(row=0, column=0, padx=5, sticky="w")
         self.task_name_entry = tk.Entry(frame, width=30, font=("Arial", 10))
         self.task_name_entry.grid(row=0, column=1, padx=5, sticky="w")
-        
+
         tk.Label(frame, text="Due Date:", bg="#f0f8ff", font=("Arial", 12)).grid(row=1, column=0, padx=5, sticky="w")
         self.due_date_entry = DateEntry(frame, width=30, font=("Arial", 10), date_pattern="yyyy-MM-dd")
         self.due_date_entry.grid(row=1, column=1, padx=5, sticky="w")
@@ -136,6 +131,12 @@ class ReminderApp:
         )
         add_task_btn.grid(row=2, column=0, columnspan=2, pady=5, sticky="ew")
 
+        sort_by_label = tk.Label(frame, text="Sort By:", bg="#f0f8ff", font=("Arial", 12))
+        sort_by_label.grid(row=3, column=0, padx=5, sticky="w")
+        sort_by_combo = Combobox(frame, values=["Priority", "Due Date"], state="readonly")
+        sort_by_combo.grid(row=3, column=1, padx=5, sticky="w")
+        sort_by_combo.bind("<<ComboboxSelected>>", lambda e: self.sort_tasks(sort_by_combo.get()))
+
         self.tree = Treeview(self.task_tab, columns=("#1", "#2", "#3"), show="headings", height=10)
         self.tree.heading("#1", text="Task")
         self.tree.heading("#2", text="Due Date")
@@ -147,6 +148,7 @@ class ReminderApp:
 
         btn_frame = tk.Frame(self.task_tab, bg="#f0f8ff")
         btn_frame.pack(pady=5, fill="x")
+
         remove_task_btn = tk.Button(
             btn_frame,
             text="Remove Task",
@@ -156,6 +158,7 @@ class ReminderApp:
             font=("Arial", 10, "bold")
         )
         remove_task_btn.grid(row=0, column=0, padx=5, sticky="ew")
+
         check_reminders_btn = tk.Button(
             btn_frame,
             text="Check Reminders",
@@ -165,10 +168,20 @@ class ReminderApp:
             font=("Arial", 10, "bold")
         )
         check_reminders_btn.grid(row=0, column=1, padx=5, sticky="ew")
+
+        dark_mode_btn = tk.Button(
+            btn_frame,
+            text="Toggle Dark Mode",
+            command=self.toggle_dark_mode,
+            bg="#000",
+            fg="#FFF",
+            font=("Arial", 10, "bold")
+        )
+        dark_mode_btn.grid(row=0, column=2, padx=5, sticky="ew")
+
         self.update_task_list()
 
     def add_task(self):
-        """Add a new task."""
         task_name = self.task_name_entry.get().strip()
         due_date = self.due_date_entry.get_date()
         due_time_str = simpledialog.askstring("Due Time", "Enter time in HH:MM format (24-hour):")
@@ -190,14 +203,19 @@ class ReminderApp:
         except ValueError:
             messagebox.showerror("Error", "Invalid time format. Please use HH:MM.")
 
+    def sort_tasks(self, criterion):
+        if criterion == "Priority":
+            self.tasks.sort(key=lambda x: x["priority"], reverse=True)
+        elif criterion == "Due Date":
+            self.tasks.sort(key=lambda x: x["due_date"])
+        self.update_task_list()
+
     def update_task_list(self):
-        """Update the task list displayed in the Treeview."""
         self.tree.delete(*self.tree.get_children())
         for task in self.tasks:
             self.tree.insert("", tk.END, values=(task["task"], task["due_date"].strftime("%Y-%m-%d %H:%M"), task["priority"]))
 
     def remove_task(self):
-        """Remove the selected task."""
         selected_item = self.tree.selection()
         if not selected_item:
             messagebox.showwarning("Warning", "No task selected.")
@@ -209,17 +227,29 @@ class ReminderApp:
         self.update_task_list()
 
     def check_reminders(self):
-        """Check for tasks due soon."""
         current_time = datetime.datetime.now()
         due_soon = [task for task in self.tasks if 0 <= (task["due_date"] - current_time).total_seconds() <= 3600]
         if due_soon:
+            for task in due_soon:
+                notification.notify(
+                    title="Task Reminder",
+                    message=f"{task['task']} is due at {task['due_date'].strftime('%Y-%m-%d %H:%M')}.",
+                    timeout=10
+                )
             reminders = "\n".join([f"{task['task']} (Due: {task['due_date'].strftime('%Y-%m-%d %H:%M')})" for task in due_soon])
             messagebox.showinfo("Upcoming Reminders", f"Tasks due soon:\n{reminders}")
         else:
             messagebox.showinfo("No Reminders", "No tasks are due within the next hour.")
 
+    def toggle_dark_mode(self):
+        bg_color = "#333333" if not self.dark_mode else "#f0f8ff"
+        fg_color = "#FFFFFF" if bg_color == "#333333" else "#000000"
+        self.root.configure(bg=bg_color)
+        for widget in self.root.winfo_children():
+            widget.configure(bg=bg_color, fg=fg_color)
+        self.dark_mode = not self.dark_mode
+
     def create_daily_schedule(self):
-        """Create and display the daily schedule."""
         schedule = []
         start_time = datetime.datetime.combine(datetime.date.today(), datetime.time(6, 0))
         end_time = datetime.datetime.combine(datetime.date.today(), datetime.time(22, 0))
@@ -235,7 +265,6 @@ class ReminderApp:
         self.schedule_display.insert(tk.END, display_text)
 
     def create_schedule_tab(self):
-        """Create the Schedule tab."""
         self.schedule_frame = tk.Frame(self.schedule_tab, bg="#f5f5dc")
         self.schedule_frame.pack(fill="both", expand=True, padx=10, pady=10)
         tk.Label(self.schedule_frame, text="[Daily Schedule]", bg="#f5f5dc", font=("Arial", 14, "bold"), pady=10).pack()
@@ -252,7 +281,6 @@ class ReminderApp:
         update_schedule_btn.pack(pady=5, fill="x")
 
     def create_report_tab(self):
-        """Create the Reports tab."""
         tk.Label(self.report_tab, text="Task Report", bg="#f0fff0", font=("Arial", 14, "bold"), pady=10).pack()
         self.report_display = tk.Text(self.report_tab, height=20, wrap="word", font=("Arial", 10))
         self.report_display.pack(fill="both", expand=True)
@@ -266,21 +294,39 @@ class ReminderApp:
         )
         generate_report_btn.pack(pady=5, fill="x")
 
+        export_report_btn = tk.Button(
+            self.report_tab,
+            text="Export to Excel",
+            command=self.export_report,
+            bg="#2196F3",
+            fg="white",
+            font=("Arial", 10, "bold")
+        )
+        export_report_btn.pack(pady=5, fill="x")
+
     def generate_report(self):
-        """Generate a report of all tasks."""
         self.report_display.delete(1.0, tk.END)
         if not self.tasks:
             self.report_display.insert(tk.END, "No tasks available to generate a report.")
             return
-        report_text = "Task Report\n" + "="*50 + "\n"
+        report_text = "Task Report\n" + "=" * 50 + "\n"
         for task in self.tasks:
             report_text += (
                 f"Task: {task['task']}\n"
                 f"Due Date: {task['due_date'].strftime('%Y-%m-%d %H:%M')}\n"
-                f"Priority: {task['priority']}\n" + "-"*50 + "\n"
+                f"Priority: {task['priority']}\n" + "-" * 50 + "\n"
             )
         self.report_display.insert(tk.END, report_text)
 
+    def export_report(self):
+        if not self.tasks:
+            messagebox.showwarning("Warning", "No tasks available to export.")
+            return
+        df = pd.DataFrame([{ "Task": task['task'], "Due Date": task['due_date'].strftime('%Y-%m-%d %H:%M'), "Priority": task['priority']} for task in self.tasks])
+        file_path = simpledialog.askstring("Save Report", "Enter file name (e.g., tasks.xlsx):")
+        if file_path:
+            df.to_excel(file_path, index=False)
+            messagebox.showinfo("Success", f"Report exported to {file_path}")
 
 if __name__ == "__main__":
     root = tk.Tk()
