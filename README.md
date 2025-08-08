@@ -1,39 +1,35 @@
-📅 Student Reminder App
-A Python-based Task & Reminder Manager built with Tkinter that helps students (or anyone, really) manage tasks, schedules, and reports.
-This app allows you to set tasks with due dates & priorities, receive desktop notifications, sort and filter tasks, view daily schedules, and export reports to Excel.
+# 📝 Student Reminder App
 
-✨ Features
-Welcome Screen – A friendly intro before you dive into the app.
+A **Python + Tkinter** desktop application that helps students manage their **tasks, schedules, and reports** in one place.  
+It features a modern tabbed interface, desktop notifications, dark mode, and Excel export capabilities.
 
-Task Management
+---
 
-Add tasks with due dates, times, and priority levels.
+## ✨ Features
 
-Sort tasks by priority or due date.
+- **Welcome Screen** – Friendly intro before you start.
+- **Task Management**
+  - Add tasks with **name**, **due date & time**, and **priority**.
+  - Sort tasks by **Priority** or **Due Date**.
+  - Remove completed/unwanted tasks.
+  - Toggle **Dark Mode** for comfortable viewing.
+- **Reminders**
+  - Desktop notifications for tasks due in the **next hour**.
+  - Quick view of upcoming deadlines.
+- **Daily Schedule**
+  - Automatically generates a **6 AM – 10 PM** time-blocked schedule.
+  - Empty slots clearly marked.
+- **Reports**
+  - View a detailed task report.
+  - Export tasks to **Excel** for backup or sharing.
+- **Persistent Storage**
+  - Saves all tasks to a local JSON file automatically.
 
-Remove completed/unwanted tasks.
+---
 
-Dark mode toggle for comfort.
+## 📦 Installation
 
-Reminders
-
-Notifications for tasks due within the next hour.
-
-Quick view of upcoming tasks.
-
-Daily Schedule
-
-Auto-generate a time-blocked schedule from 6 AM to 10 PM.
-
-Empty slots clearly marked.
-
-Reports
-
-Generate a task report within the app.
-
-Export your tasks to Excel for backup or sharing.
-
-Persistent Storage
-
-All tasks are saved to a JSON file so you never lose progress.
-
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/YOUR_USERNAME/student-reminder-app.git
+cd student-reminder-app
