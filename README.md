@@ -26,10 +26,3 @@ It features a modern tabbed interface, desktop notifications, dark mode, and Exc
   - Saves all tasks to a local JSON file automatically.
 
 ---
-
-## 📦 Installation
-
-### 1️⃣ Clone the Repository
-```bash
-git clone https://github.com/YOUR_USERNAME/student-reminder-app.git
-cd student-reminder-app
